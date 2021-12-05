@@ -65,11 +65,14 @@ if(NOT COMMAND dciIntegrationSetupTarget)
         set(setupApiExports Off)
         set(setupLinker Off)
         set(linkIntegration Off)
-        set(setupOutputDirectory)
+        set(setupOutputDirectoryApp)
+        set(setupOutputDirectoryLib)
         set(setupPrefix)
+        set(setupImplibPrefix)
         set(setupRpath Off)
         set(setupDebug Off)
         set(setupReproducibleBuild Off)
+        set(setupLaunchCmd Off)
 
         #######################################################################
         if("EXECUTABLE" STREQUAL ${type})
@@ -77,18 +80,20 @@ if(NOT COMMAND dciIntegrationSetupTarget)
             set(setupApiExports On)
             set(setupLinker On)
             set(linkIntegration On)
-            set(setupOutputDirectory "${outputDirectoryApp}")
+            set(setupOutputDirectoryApp "${outputDirectoryApp}")
             set(setupPrefix dci-)
             set(setupRpath On)
             set(setupDebug On)
             set(setupReproducibleBuild  On)
+            set(setupLaunchCmd On)
         elseif("MODULE_LIBRARY" STREQUAL ${type})
             set(setupCxx On)
             set(setupApiExports On)
             set(setupLinker On)
             set(linkIntegration On)
-            set(setupOutputDirectory "${outputDirectoryLib}")
+            set(setupOutputDirectoryLib "${outputDirectoryLib}")
             set(setupPrefix libdci-)
+            set(setupImplibPrefix libdci-)
             set(setupRpath On)
             set(setupDebug On)
             set(setupReproducibleBuild  On)
@@ -97,8 +102,9 @@ if(NOT COMMAND dciIntegrationSetupTarget)
             set(setupApiExports On)
             set(setupLinker On)
             set(linkIntegration On)
-            set(setupOutputDirectory "${outputDirectoryLib}")
+            set(setupOutputDirectoryLib "${outputDirectoryLib}")
             set(setupPrefix libdci-)
+            set(setupImplibPrefix libdci-)
             set(setupRpath On)
             set(setupDebug On)
             set(setupReproducibleBuild  On)
@@ -107,7 +113,7 @@ if(NOT COMMAND dciIntegrationSetupTarget)
             set(setupApiExports On)
             set(setupLinker Off)
             set(linkIntegration Off)
-            set(setupOutputDirectory "${outputDirectoryLib}")
+            set(setupOutputDirectoryLib "${outputDirectoryLib}")
             set(setupPrefix libdci-)
             set(setupRpath Off)
             set(setupDebug Off)
@@ -136,8 +142,6 @@ if(NOT COMMAND dciIntegrationSetupTarget)
             target_compile_definitions(${target} PRIVATE "dciUnitName=\"${DCI_UNIT_NAME}\"")
             target_compile_definitions(${target} PRIVATE "dciUnitTargetName=\"${target}\"")
             target_compile_definitions(${target} PRIVATE "dciUnitTargetFile=\"$<TARGET_FILE_NAME:${target}>\"")
-
-            target_compile_options(${target} PRIVATE "-fPIC")
         endif()
 
         #######################################################################
@@ -148,17 +152,26 @@ if(NOT COMMAND dciIntegrationSetupTarget)
             set_target_properties(${target} PROPERTIES DEFINE_SYMBOL "")
             target_compile_definitions(${target} PRIVATE "DCI_${def}_EXPORTS")
 
-            set_target_properties(${target} PROPERTIES
-                C_VISIBILITY_PRESET hidden
-                CXX_VISIBILITY_PRESET hidden
-                VISIBILITY_INLINES_HIDDEN TRUE)
+            if(CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF")
+                set_target_properties(${target} PROPERTIES
+                    C_VISIBILITY_PRESET hidden
+                    CXX_VISIBILITY_PRESET hidden
+                    VISIBILITY_INLINES_HIDDEN TRUE)
+            endif()
         endif()
 
         #######################################################################
         if(setupLinker)
-            get_property(LINK_FLAGS TARGET ${target} PROPERTY LINK_FLAGS)
-            set_target_properties(${target} PROPERTIES LINK_FLAGS "${LINK_FLAGS} -Wl,--no-undefined")
+            if(CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF")
+                get_property(LINK_FLAGS TARGET ${target} PROPERTY LINK_FLAGS)
+                set_target_properties(${target} PROPERTIES LINK_FLAGS "${LINK_FLAGS} -Wl,--no-undefined")
+            endif()
+
             dciIntegrationMeta(UNIT ${DCI_UNIT_NAME} TARGET ${target} FILE_FOR_TARGET_DEPS $<TARGET_FILE:${target}>)
+            if(WIN32 AND "SHARED_LIBRARY" STREQUAL ${type})
+                file(RELATIVE_PATH implibDir "${DCI_OUT_DIR}" "${setupOutputDirectoryLib}")
+                dciIntegrationMeta(UNIT ${DCI_UNIT_NAME} EXTRA_ALLOWED ${implibDir}/$<TARGET_LINKER_FILE_NAME:${target}>)
+            endif()
         endif()
 
         #######################################################################
@@ -167,33 +180,45 @@ if(NOT COMMAND dciIntegrationSetupTarget)
         endif()
 
         #######################################################################
-        if(setupOutputDirectory)
+        if(setupOutputDirectoryApp)
+            set_target_properties(${target} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${setupOutputDirectoryApp})
+        endif()
+        if(setupOutputDirectoryLib)
             set_target_properties(${target} PROPERTIES
-                RUNTIME_OUTPUT_DIRECTORY ${setupOutputDirectory}
-                LIBRARY_OUTPUT_DIRECTORY ${setupOutputDirectory}
-                ARCHIVE_OUTPUT_DIRECTORY ${setupOutputDirectory})
+                RUNTIME_OUTPUT_DIRECTORY ${setupOutputDirectoryLib}
+                LIBRARY_OUTPUT_DIRECTORY ${setupOutputDirectoryLib}
+                ARCHIVE_OUTPUT_DIRECTORY ${setupOutputDirectoryLib})
         endif()
 
         #######################################################################
         if(setupPrefix)
             set_target_properties(${target} PROPERTIES PREFIX "${setupPrefix}")
         endif()
+        if(setupImplibPrefix)
+            set_target_properties(${target} PROPERTIES IMPORT_PREFIX "${setupImplibPrefix}")
+        endif()
 
         #######################################################################
         if(setupRpath)
-            if(setupOutputDirectory)
-                file(RELATIVE_PATH RPATH "${setupOutputDirectory}" "${DCI_OUT_DIR}/lib")
+            if (CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF")
+
+                if(setupOutputDirectoryApp)
+                    file(RELATIVE_PATH RPATH "${setupOutputDirectoryApp}" "${DCI_OUT_DIR}/lib")
+                elseif(setupOutputDirectoryLib)
+                    file(RELATIVE_PATH RPATH "${setupOutputDirectoryLib}" "${DCI_OUT_DIR}/lib")
+                else()
+                    set(RPATH "../lib")
+                endif()
+
                 if(RPATH)
                     set(RPATH "\$ORIGIN/${RPATH}")
                 else()
                     set(RPATH "\$ORIGIN")
                 endif()
-            else()
-                set(RPATH "\$ORIGIN/../lib")
-            endif()
 
-            set_target_properties(${target} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-            set_target_properties(${target} PROPERTIES INSTALL_RPATH "${RPATH}")
+                set_target_properties(${target} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+                set_target_properties(${target} PROPERTIES INSTALL_RPATH "${RPATH}")
+            endif()
         endif()
 
         #######################################################################
@@ -208,17 +233,19 @@ if(NOT COMMAND dciIntegrationSetupTarget)
             endif()
 
             if(DCI_SEPARATE_DEBUG)
-                if(DCI_BE_DIR)
-                    set(gdb_add_index ${DCI_BE_DIR}/bin/gdb-add-index)
-                else()
-                    set(gdb_add_index gdb-add-index)
+                if (CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF")
+                    if(DCI_BE_DIR)
+                        set(COMMAND_gdb_add_index ${DCI_BE_DIR}/bin/gdb-add-index $<TARGET_FILE:${target}>.debug)
+                    else()
+                        set(COMMAND_gdb_add_index gdb-add-index $<TARGET_FILE:${target}>.debug)
+                    endif()
                 endif()
 
                 add_custom_command(TARGET ${target}
                     POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:${target}>.debug
                     COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:${target}> $<TARGET_FILE:${target}>.debug
-                    COMMAND ${gdb_add_index} $<TARGET_FILE:${target}>.debug
+                    COMMAND ${COMMAND_gdb_add_index}
                     COMMAND ${CMAKE_OBJCOPY} --strip-all $<TARGET_FILE:${target}>
                     COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE:${target}>.debug $<TARGET_FILE:${target}>
                     COMMENT "Separating debug info for ${target}"
@@ -277,11 +304,43 @@ if(NOT COMMAND dciIntegrationSetupTarget)
             add_dependencies(unit-${UNAME} ${target})
         endif()
 
-        # таргета зависит от всех юнитов, заявленных как зависимости для данного юнита
+        #######################################################################
+        # таргет зависит от всех юнитов, заявленных как зависимости для данного юнита
         get_property(udeps GLOBAL PROPERTY DCI_INTEGRATION_REGISTRY_${UNAME}_DEPENDS)
         foreach(udep ${udeps})
             add_dependencies(${target} unit-${udep})
         endforeach()
 
+        ############################################################
+        if(setupLaunchCmd)
+            if(WIN32)
+                get_target_property(outputName ${target} OUTPUT_NAME)
+                if(NOT outputName)
+                    set(outputName ${target})
+                endif()
+                set(cmdFile ${setupPrefix}${outputName}.cmd)
+                set(cmd ${setupOutputDirectoryApp}/${cmdFile})
+                file(RELATIVE_PATH path4Comment ${CMAKE_BINARY_DIR} ${cmd})
+                add_custom_command(
+                    OUTPUT ${cmd}
+                    COMMAND ${CMAKE_COMMAND}
+                        -DtargetDir=${setupOutputDirectoryApp}
+                        -DtargetFile=$<TARGET_FILE_NAME:${target}>
+                        -DcmdFile=${cmdFile}
+                        -P ${dciIntegrationSetupTarget_dir}/dciIntegrationSetupTargetCreateLaunchCmd.script
+                    VERBATIM
+                    COMMENT "Generating ${path4Comment}"
+                )
+                #add_dependencies(${target}-cmd ${target} ${cmd})# это не работает
+                target_sources(${target} PRIVATE ${cmd})# а это работает, хоть и выглядит наизнанку..
+                add_executable(${target}-cmd IMPORTED GLOBAL)
+                set_target_properties(${target}-cmd PROPERTIES IMPORTED_LOCATION ${cmd})
+                if(kind STREQUAL "REGULAR" OR kind STREQUAL "BDEP")
+                    dciIntegrationMeta(UNIT ${DCI_UNIT_NAME} TARGET ${target} TARGET_DEPS ${cmd})
+                endif()
+            else()
+                add_executable(${target}-cmd ALIAS ${target})
+            endif()
+        endif()
     endfunction()
 endif()

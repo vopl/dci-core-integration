@@ -33,7 +33,8 @@ if(NOT COMMAND dciIntegrationMeta)
         cmake_parse_arguments(A "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
         foreach(file ${A_FILE_FOR_TARGET_DEPS})
-            list(APPEND A_COMMAND "${CMAKE_COMMAND} -D u=${A_UNIT} -D t=${A_TARGET} -D f=${file} -P ${dciIntegrationMeta_dir}/dciIntegrationMetaFetchTargetRuntimeDeps.cmake")
+            #list(APPEND A_COMMAND "${CMAKE_COMMAND} -D u=\"${A_UNIT}\" -D t=\"${A_TARGET}\" -D f=\"${file}\" -D libdir=\"${DCI_OUT_DIR}/lib\" -P ${dciIntegrationMeta_dir}/dciIntegrationMetaFetchTargetRuntimeDeps.script")
+            list(APPEND A_COMMAND "sh ${dciIntegrationMeta_dir}/dciIntegrationMetaFetchTargetRuntimeDeps.sh \"${A_UNIT}\" \"${A_TARGET}\" \"${file}\" \"${DCI_OUT_DIR}/lib\"")
         endforeach()
 
         set(unitPart)
@@ -50,7 +51,7 @@ if(NOT COMMAND dciIntegrationMeta)
             if(A_${pa})
                 set(tmp ${unitPart} ${targetPart} ${pa}[${A_${pa}}])
                 list(JOIN tmp " " tmp)
-                list(APPEND A_COMMAND "${CMAKE_COMMAND} -E echo \"${tmp}\"")
+                list(APPEND A_COMMAND "echo \"${tmp}\"")
             endif()
         endforeach()
 

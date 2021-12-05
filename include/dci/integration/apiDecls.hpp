@@ -7,8 +7,8 @@
 
 #pragma once
 
-#ifdef __GNUC__
-#   ifdef _WIN32
+#if __GNUC__
+#   if _WIN32
 #       define DCI_INTEGRATION_APIDECL_LOCAL
 #       define DCI_INTEGRATION_APIDECL_EXPORT __declspec(dllexport)
 #       define DCI_INTEGRATION_APIDECL_IMPORT __declspec(dllimport)

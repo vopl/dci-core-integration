@@ -1,3 +1,7 @@
+if(WIN32)
+    set(ENV{PATH} "${libdir};$ENV{PATH}")
+endif()
+
 include(GetPrerequisites)
 get_prerequisites("${f}" deps 0 1 "" "")
 
@@ -7,4 +11,4 @@ foreach(dep ${deps})
     list(APPEND adeps ${adep})
 endforeach()
 
-execute_process(COMMAND ${CMAKE_COMMAND} -E echo "UNIT[${u}] TARGET[${t}] TARGET_DEPS[${adeps}]")
+execute_process(COMMAND echo "UNIT[${u}] TARGET[${t}] TARGET_DEPS[${adeps}] ")

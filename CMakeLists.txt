@@ -18,6 +18,7 @@ dciIntegrationSetupTarget(${UNAME})
 #####################
 target_compile_definitions(${UNAME} PRIVATE -DDCI_SRC_BRANCH="${DCI_SRC_BRANCH}")
 target_compile_definitions(${UNAME} PRIVATE -DDCI_SRC_REVISION="${DCI_SRC_REVISION}")
+target_compile_definitions(${UNAME} PRIVATE -DDCI_SRC_MOMENT=${DCI_SRC_MOMENT})
 target_compile_definitions(${UNAME} PRIVATE -DDCI_PLATFORM_OS="${DCI_PLATFORM_OS}")
 target_compile_definitions(${UNAME} PRIVATE -DDCI_PLATFORM_ARCH="${DCI_PLATFORM_ARCH}")
 target_compile_definitions(${UNAME} PRIVATE -DDCI_COMPILER="${DCI_COMPILER}")

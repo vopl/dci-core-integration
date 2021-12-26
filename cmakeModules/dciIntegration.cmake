@@ -19,6 +19,7 @@ if(NOT COMMAND dciIntegration)
             BE_DIR
             SRC_BRANCH
             SRC_REVISION
+            SRC_MOMENT
             PLATFORM_OS
             PLATFORM_ARCH
             COMPILER
@@ -73,6 +74,20 @@ if(NOT COMMAND dciIntegration)
                     OUTPUT_STRIP_TRAILING_WHITESPACE)
             else()
                 set(DCI_SRC_REVISION "0000000000000000000000000000000000000000")
+            endif()
+        endif()
+
+        #####################
+        if(NOT DCI_SRC_MOMENT)
+            find_package(Git)
+            if(Git_FOUND)
+                execute_process(
+                    COMMAND ${GIT_EXECUTABLE} show -s --format=%at ${DCI_SRC_REVISION}
+                    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+                    OUTPUT_VARIABLE DCI_SRC_MOMENT
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+            else()
+                set(DCI_SRC_MOMENT 0)
             endif()
         endif()
 
@@ -136,6 +151,7 @@ if(NOT COMMAND dciIntegration)
         set(DCI_BE_DIR                  ${DCI_BE_DIR}                   CACHE PATH   "build envitonment directory" FORCE)
         set(DCI_SRC_BRANCH              ${DCI_SRC_BRANCH}               CACHE STRING "sources VCS branch" FORCE)
         set(DCI_SRC_REVISION            ${DCI_SRC_REVISION}             CACHE STRING "sources VCS revision" FORCE)
+        set(DCI_SRC_MOMENT              ${DCI_SRC_MOMENT}               CACHE STRING "sources VCS commit moment" FORCE)
         set(DCI_PLATFORM_OS             ${DCI_PLATFORM_OS}              CACHE STRING "platform OS" FORCE)
         set(DCI_PLATFORM_ARCH           ${DCI_PLATFORM_ARCH}            CACHE STRING "platform arch" FORCE)
         set(DCI_COMPILER                ${DCI_COMPILER}                 CACHE STRING "compiler name" FORCE)

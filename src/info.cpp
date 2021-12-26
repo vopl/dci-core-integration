@@ -6,6 +6,8 @@
    You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 #include <dci/integration/info.hpp>
+#include <string>
+#include <ctime>
 
 namespace dci::integration::info
 {
@@ -29,6 +31,16 @@ namespace dci::integration::info
     {
 #if defined(DCI_SRC_REVISION)
         return CAT(DCI_SRC_REVISION, sv);
+#else
+        return {};
+#endif
+    }
+
+    /////////0/////////1/////////2/////////3/////////4/////////5/////////6/////////7
+    std::uint64_t srcMoment()
+    {
+#if defined(DCI_SRC_MOMENT)
+        return DCI_SRC_MOMENT;
 #else
         return {};
 #endif
@@ -92,5 +104,26 @@ namespace dci::integration::info
 #else
         return {};
 #endif
+    }
+
+    /////////0/////////1/////////2/////////3/////////4/////////5/////////6/////////7
+    std::string_view API_DCI_INTEGRATION version()
+    {
+        static std::string res = version(srcBranch(), srcRevision(), srcMoment());
+        return res;
+    }
+
+    /////////0/////////1/////////2/////////3/////////4/////////5/////////6/////////7
+    std::string API_DCI_INTEGRATION version(std::string_view srcBranch, std::string_view srcRevision, std::uint64_t srcMoment)
+    {
+        time_t moment = srcMoment;
+        std::string momentStr;
+        momentStr.resize(64);
+        momentStr.resize(strftime(momentStr.data(), momentStr.size(), "%Y-%m-%d", std::gmtime(&moment)));
+
+        return
+                momentStr + "-" +
+                std::string{srcBranch} + "-" +
+                std::string(srcRevision.data(), std::min(srcRevision.size(), std::size_t{7}));
     }
 }

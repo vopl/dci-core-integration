@@ -4,13 +4,13 @@ if(NOT COMMAND dciIntegrationSetupTarget)
     include(${dciIntegrationSetupTarget_dir}/dciIntegrationMeta.cmake)
 
     function(dciIntegrationSetupTargetMapSourceDirectory target from to)
-#        target_compile_options(${target} PRIVATE -ffile-prefix-map=${from}=)
-#        target_compile_options(${target} PRIVATE -fmacro-prefix-map=${from}=)
-#        target_compile_options(${target} PRIVATE -fdebug-prefix-map=${from}=)
+        target_compile_options(${target} PRIVATE -ffile-prefix-map=${from}=)
+        target_compile_options(${target} PRIVATE -fmacro-prefix-map=${from}=)
+        target_compile_options(${target} PRIVATE -fdebug-prefix-map=${from}=)
 
-#        target_compile_options(${target} PRIVATE -ffile-prefix-map=${from}/=)
-#        target_compile_options(${target} PRIVATE -fmacro-prefix-map=${from}/=)
-#        target_compile_options(${target} PRIVATE -fdebug-prefix-map=${from}/=)
+        target_compile_options(${target} PRIVATE -ffile-prefix-map=${from}/=)
+        target_compile_options(${target} PRIVATE -fmacro-prefix-map=${from}/=)
+        target_compile_options(${target} PRIVATE -fdebug-prefix-map=${from}/=)
     endfunction()
 
     function(dciIntegrationSetupTarget target)
@@ -163,9 +163,9 @@ if(NOT COMMAND dciIntegrationSetupTarget)
         #######################################################################
         if(setupLinker)
             if(CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF")
-                get_property(LINK_FLAGS TARGET ${target} PROPERTY LINK_FLAGS)
-                set_target_properties(${target} PROPERTIES LINK_FLAGS "${LINK_FLAGS} -Wl,--no-undefined")
+                target_link_options(${target} PRIVATE -Wl,--no-undefined)
             endif()
+            target_link_options(${target} PRIVATE -Wl,--build-id=sha1)
 
             dciIntegrationMeta(UNIT ${DCI_UNIT_NAME} TARGET ${target} FILE_FOR_TARGET_DEPS $<TARGET_FILE:${target}>)
             if(WIN32 AND "SHARED_LIBRARY" STREQUAL ${type})
@@ -255,7 +255,7 @@ if(NOT COMMAND dciIntegrationSetupTarget)
         endif()
 
         #######################################################################
-        if(setupReproducibleBuild)
+        if(DCI_REPRODUCIBLE_BUILD AND setupReproducibleBuild)
             if("STATIC_LIBRARY" STREQUAL ${type})
                 add_custom_command(TARGET ${target}
                     POST_BUILD
@@ -271,8 +271,7 @@ if(NOT COMMAND dciIntegrationSetupTarget)
                 endif()
 
             else()
-                target_link_options(${target} PRIVATE -Wl,--build-id=sha1)
-                #target_link_options(${target} PRIVATE -Wl,--no-insert-timestamp)
+                target_link_options(${target} PRIVATE -Wl,--no-insert-timestamp)
             endif()
 
             foreach(iidir ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES} ${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES})

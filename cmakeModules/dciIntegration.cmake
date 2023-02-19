@@ -25,6 +25,7 @@ if(NOT COMMAND dciIntegration)
             COMPILER
             COMPILER_VERSION
             COMPILER_OPTIMIZATION
+            REPRODUCIBLE_BUILD
             PROVIDER
             AUP_SIGNERKEY
             BUILD_TESTS
@@ -34,7 +35,7 @@ if(NOT COMMAND dciIntegration)
         cmake_parse_arguments(DCI "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
         foreach(VAR ${oneValueArgs})
-            if(NOT DCI_${VAR})
+            if(NOT DCI_${VAR} AND DEFINED ENV{DCI_${VAR}})
                 set(DCI_${VAR} $ENV{DCI_${VAR}})
             endif()
         endforeach()

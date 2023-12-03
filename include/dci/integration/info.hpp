@@ -10,6 +10,7 @@
 #include "api.hpp"
 #include <string_view>
 #include <string>
+#include <cstdint>
 
 namespace dci::integration::info
 {

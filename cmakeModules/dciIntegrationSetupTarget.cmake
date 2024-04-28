@@ -135,7 +135,7 @@ if(NOT COMMAND dciIntegrationSetupTarget)
         #######################################################################
         if(setupCxx)
             set_target_properties(${target} PROPERTIES
-                CXX_STANDARD 20
+                CXX_STANDARD 23
                 CXX_STANDARD_REQUIRED TRUE
                 POSITION_INDEPENDENT_CODE TRUE)
 

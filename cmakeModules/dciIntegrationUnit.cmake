@@ -39,10 +39,6 @@ if(NOT COMMAND dciIntegrationUnit)
 
     ############################################################################
     macro(dciIntegrationUnit name)
-
-        source_group("<Source Dir>" REGULAR_EXPRESSION "${CMAKE_SOURCE_DIR}")
-        source_group("<Current Source Dir>" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}")
-
         set(options WANT_POSTPROCESSING)
         set(oneValueArgs)
         set(multiValueArgs DEPENDS CMM_DIRS INCLUDE_DIRS IDL_DIRS)
